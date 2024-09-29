@@ -1,0 +1,214 @@
+import pygame
+import random
+import pandas as pd
+
+from typing import Literal, Iterator
+
+from .colors import Palette, CardPalette, MainPalette
+
+
+"""Hopefully this is useful
+https://www.pygame.org/wiki/TextWrap
+"""
+
+
+# draw some text into an area of a surface
+# automatically wraps words
+# returns any text that didn't get blitted
+def drawText(surface, text, color, rect, font, aa=False, bkg=None):
+    rect = pygame.Rect(rect)
+    y = rect.top
+    lineSpacing = -2
+
+    # get the height of the font
+    fontHeight = font.size("Tg")[1]
+
+    while text:
+        i = 1
+
+        # determine if the row of text will be outside our area
+        if y + fontHeight > rect.bottom:
+            break
+
+        # determine maximum width of line
+        while font.size(text[:i])[0] < rect.width and i < len(text):
+            i += 1
+
+        # if we've wrapped the text, then adjust the wrap to the last word
+        if i < len(text):
+            i = text.rfind(" ", 0, i) + 1
+
+        # render the line and blit it to the surface
+        if bkg:
+            image = font.render(text[:i], 1, color, bkg)
+            image.set_colorkey(bkg)
+        else:
+            image = font.render(text[:i], aa, color)
+
+        surface.blit(image, (rect.left, y))
+        y += fontHeight + lineSpacing
+
+        # remove the text we just blitted
+        text = text[i:]
+
+    return text
+
+
+class Card(object):
+    """One card that will be displayed on screen
+    Ain't writing a docstring for this one sorry yall
+    """
+
+    def __init__(
+        self,
+        text: str,
+        match_id: str,
+        x: int,
+        y: int,
+        width: int = 100,
+        height: int = 50,
+        font: "pygame.font.Font" = None,
+        palette: "Palette" = CardPalette,
+    ) -> None:
+        """YK what it is"""
+
+        """TODO: Optimize the colors thing. I eventually want to make a dataclass for ObjectColors and BGColors or some shit, with ones like 'default', 'highlight', 'flag', etc. 
+        Also a "Position" object with .x, .y just to not have a zillion arguments
+        """
+        self.text = text  # display text
+        self.match_id = match_id  # used to confirm match
+        self.rect = pygame.Rect(x, y, width, height)
+        self.palette = palette
+        self._color = self.palette.bg
+        self.matched = False  # is the card matched? will not display
+        self.selected = False
+
+        self.width = width
+        self.height = height
+
+        if not font:
+            class LoadTheFontBro(Exception):
+                pass
+            raise LoadTheFontBro("Mf")
+        
+        self.font = font
+
+    def draw(self, screen) -> None:
+        """Draws rectangle on screen"""
+        pygame.draw.rect(screen, self._color, self.rect)
+        drawText(screen, self.text, self.palette.fg, self.rect, self.font)
+
+    def check_click(self, pos) -> bool:
+        """Returns if the point is inside the rectangle"""
+        return self.rect.collidepoint(pos)
+
+    def set_matched(self) -> None:
+        """Mark card as matched"""
+        self.matched = True
+
+    def select(self) -> None:
+        """Use this to handle clicks"""
+        self._color = self.palette.sel
+        self.selected = True
+
+    def deselect(self) -> None:
+        """Toggle off select"""
+        self._color = self.palette.bg
+        self.selected = False
+
+    def set_color(self, color) -> None:
+        self._color = color
+
+
+"""
+how can i make a generator object GridGenerator(x_incr: int, y_incr: int): that generates a grid like
+yield (idk this logic lmao) (x, y), then (x + x_incr, y + y_incr) ....
+
+i should also make it modular, like def create_deck_from_cards(dataframe)
+
+"""
+
+
+def GridGenerator(
+    x_incr: int, y_incr: int, x_max: int, y_max: int
+) -> Iterator[tuple[int, int]]:
+    x, y = 0, 0
+    while y <= y_max or 1:
+        yield (x, y)
+        x += x_incr
+
+        # Wrap around the x value if it exceeds x_max
+        if x >= x_max - 150:
+            x = 0
+            y += y_incr
+
+
+def create_cards(
+    cards_dict: dict,
+    positioning: Literal["grid", "random"] = "grid",
+    screen_dim: tuple = (960, 540),
+    font: "pygame.font.Font" = None,
+    palette: "Palette" = CardPalette,
+) -> list["Card"]:
+    if not font:
+
+        class NoFont(Exception): ...
+
+        raise NoFont("No Fucking Font")
+    print(cards_dict)
+    items: list[tuple] = list(cards_dict.items())
+    random.shuffle(items)
+    card_width = (screen_dim[0] - 150) // 5
+    card_height = screen_dim[1] // 4
+
+    positions: list = (
+        []
+    )  # type hint would be fucked. this is a list of tuples containing 2 (x, y) positions.
+    generator = GridGenerator(
+        (card_width + 3), (card_height + 3), screen_dim[0], screen_dim[1]
+    )
+
+    for i in range(len(items)):
+        coord1 = next(generator)
+        coord2 = next(generator)
+        positions.extend((coord1, coord2))
+
+    random.shuffle(positions)
+    positions = list(zip(positions[::2], positions[1:][::2]))
+
+    cards: list["Card"] = []
+
+    for i, (key, value) in enumerate(items):
+
+        id1 = random.randint(0, 1000)
+        id2 = 1000 - id1
+
+        pos1, pos2 = positions[i][0], positions[i][1]
+
+        term_card = Card(
+            text=key,
+            match_id=id1,
+            x=pos1[0],
+            y=pos1[1],
+            width=card_width,
+            height=card_height,
+            font=font,
+        )  # watch the dims
+        def_card = Card(
+            text=value,
+            match_id=id2,
+            x=pos2[0],
+            y=pos2[1],
+            width=card_width,
+            height=card_height,
+            font=font,
+        )
+        cards.extend([term_card, def_card])  # extend? do we want a list of lists?
+
+    return cards
+
+EmptyScores: pd.DataFrame = pd.DataFrame(columns=['fpath', 'deck_name', 'highscore', '_recent'])
+
+def add_score_row(scores: pd.DataFrame, fpath: str, deck_name: str, highscore: float, recent_score: float) -> pd.DataFrame:
+    new_row = pd.DataFrame({'fpath': [fpath], 'deck_name': [deck_name], 'highscore': [highscore], '_recent': [recent_score]})
+    return pd.concat((scores, new_row))
