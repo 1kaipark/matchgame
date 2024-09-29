@@ -6,6 +6,7 @@ from tkinter.filedialog import askopenfilenames
 from tkinter import ttk
 import pandas as pd
 from lib.utils import EmptyScores
+from lib.q2csv import CSVGenerator
 
 from matchgame import run_game
 
@@ -30,13 +31,24 @@ class Launcher(object):
         self.tree.bind("<ButtonRelease-1>", self.on_item_click)
 
         self.open_files_button = tk.Button(master=self.root, text="Load Decks", command=self.load_decks)
-        self.clear_files_button = tk.Button(master=self.root, text="Clear Decks", command=self.clear_decks)
 
-        self.tree.pack()
-        self.open_files_button.pack()
-        self.clear_files_button.pack()
+        self.tree.grid(row=0, column=0)
+        self.open_files_button.grid(row=1, column=0)
 
         self.root.resizable(False, False)
+        
+        
+        # NOTE DELETE ME SOON
+        def donothing(): 1==1
+        self.menubar = tk.Menu(root)
+        self.filemenu = tk.Menu(self.menubar, tearoff=0)
+        self.filemenu.add_command(label="Clear all CSVs", command=self.clear_decks)
+        self.filemenu.add_command(label="Create CSV from Quizlet", command=self.open_q2csv)
+        self.filemenu.add_separator()
+        self.filemenu.add_command(label="Exit", command=root.quit)
+        self.menubar.add_cascade(label="File", menu=self.filemenu)
+        
+        self.root.config(menu=self.menubar)
 
     def load_decks(self) -> None:
         self.deck_csvs = askopenfilenames()
@@ -84,6 +96,9 @@ class Launcher(object):
                 score = scores_updated.loc[scores_updated['fpath'] == selected[0]]
                 print(score, "FROM MAIN")
                 self.tree.item(selected, values=(Path(fpath).stem, result[1], result[0]))
+                
+    def open_q2csv(self) -> None:
+        app = CSVGenerator(root=self.root)
 
 
 if __name__ == "__main__":
