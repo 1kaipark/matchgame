@@ -31,7 +31,7 @@ def load_cards(csv_path: str) -> dict:
 
     cards_df = pd.read_csv(csv_path)
     cards_df = cards_df.sample(frac=1.0)
-    cards_df = cards_df.iloc[0:10]
+    cards_df = cards_df.iloc[0:6]
 
     return {t[1]["term"]: t[1]["definition"] for t in cards_df.iterrows()}, deck_name
 

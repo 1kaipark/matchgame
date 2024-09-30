@@ -206,11 +206,11 @@ def create_cards(
     random.shuffle(items)
     
     if positioning == "grid":
-        card_width = (screen_dim[0] - 150) // 5
-        card_height = screen_dim[1] // 4
+        card_width = (screen_dim[0] - 150) // 4
+        card_height = screen_dim[1] // 3
     elif positioning == "random":
-        card_width = (screen_dim[0] - 150) // 9
-        card_height = screen_dim[1] // 8
+        card_width = (screen_dim[0] - 150) // 7
+        card_height = screen_dim[1] // 6
 
     positions: list = (
         []
