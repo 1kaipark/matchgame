@@ -1,7 +1,8 @@
 {
     "width": 1280,
     "height": 720,
-    "card_font_size": 12,
+    "card_font_size": 20,
     "menu_font_size": 36,
-    "penalty": 5.0
+    "penalty": 5.0,
+    "positioning": "random"
 }

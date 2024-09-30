@@ -11,6 +11,10 @@ from .colors import Palette, CardPalette, MainPalette
 https://www.pygame.org/wiki/TextWrap
 """
 
+MAX32: int = int.from_bytes(
+        bytes.fromhex("7FFFFFFF")
+    )  # doesn't matter this is just swag lmao
+
 
 # draw some text into an area of a surface
 # automatically wraps words
@@ -83,14 +87,17 @@ class Card(object):
         self.matched = False  # is the card matched? will not display
         self.selected = False
 
+        
         self.width = width
         self.height = height
 
         if not font:
+
             class LoadTheFontBro(Exception):
                 pass
+
             raise LoadTheFontBro("Mf")
-        
+
         self.font = font
 
     def draw(self, screen) -> None:
@@ -101,6 +108,11 @@ class Card(object):
     def check_click(self, pos) -> bool:
         """Returns if the point is inside the rectangle"""
         return self.rect.collidepoint(pos)
+    
+    def check_collision(self, rect: "pygame.Rect") -> bool:
+        """Returns true if rectangle collides"""
+        return self.rect.colliderect(rect) if not self.matched else False
+        
 
     def set_matched(self) -> None:
         """Mark card as matched"""
@@ -143,12 +155,52 @@ def GridGenerator(
             y += y_incr
 
 
+def GridGenerator(
+    x_incr: int,
+    y_incr: int,
+    x_max: int,
+    y_max: int,
+    positioning: Literal["grid", "random"] = "grid",
+    padding: int = 50,
+) -> Iterator[tuple[int, int]]:
+
+    if positioning == "grid":
+        x, y = 0, 0
+        while y <= y_max or 1:
+            yield (x, y)
+            x += x_incr
+
+            # Wrap around the x value if it exceeds x_max
+            if x >= x_max - 150:
+                x = 0
+                y += y_incr
+    elif positioning == "random":
+        occupied_pos: list[tuple[int, int]] = []
+        while len(occupied_pos) < (x_max // x_incr) * (y_max // y_incr):
+            x = random.randint(0, x_max - x_incr)
+            y = random.randint(0, y_max - y_incr)
+            candidate = (x, y)
+
+            if not any(
+                (
+                    (
+                        abs(x - ox) < x_incr + padding
+                        and abs(y - oy) < y_incr + padding
+                        for ox, oy in occupied_pos
+                    )
+                )
+            ):
+                occupied_pos.append(candidate)
+                yield candidate
+
+
 def create_cards(
     cards_dict: dict,
     positioning: Literal["grid", "random"] = "grid",
     screen_dim: tuple = (960, 540),
     font: "pygame.font.Font" = None,
     palette: "Palette" = CardPalette,
+    padding: int = 50,
 ) -> list["Card"]:
     if not font:
 
@@ -158,21 +210,30 @@ def create_cards(
     print(cards_dict)
     items: list[tuple] = list(cards_dict.items())
     random.shuffle(items)
-    card_width = (screen_dim[0] - 150) // 5
-    card_height = screen_dim[1] // 4
+    
+    if positioning == "grid":
+        card_width = (screen_dim[0] - 150) // 5
+        card_height = screen_dim[1] // 4
+    elif positioning == "random":
+        card_width = (screen_dim[0] - 150) // 10
+        card_height = screen_dim[1] // 8
 
     positions: list = (
         []
     )  # type hint would be fucked. this is a list of tuples containing 2 (x, y) positions.
     generator = GridGenerator(
-        (card_width + 3), (card_height + 3), screen_dim[0], screen_dim[1]
+        (card_width + 3),
+        (card_height + 3),
+        screen_dim[0],
+        screen_dim[1],
+        positioning=positioning,
+        padding=padding,
     )
 
-    for i in range(len(items)):
-        coord1 = next(generator)
-        coord2 = next(generator)
-        positions.extend((coord1, coord2))
-
+    for i in range(len(items) * 2):
+        coord = next(generator)
+        positions.append(coord)
+        
     random.shuffle(positions)
     positions = list(zip(positions[::2], positions[1:][::2]))
 
@@ -207,8 +268,25 @@ def create_cards(
 
     return cards
 
-EmptyScores: pd.DataFrame = pd.DataFrame(columns=['fpath', 'deck_name', 'highscore', '_recent'])
 
-def add_score_row(scores: pd.DataFrame, fpath: str, deck_name: str, highscore: float, recent_score: float) -> pd.DataFrame:
-    new_row = pd.DataFrame({'fpath': [fpath], 'deck_name': [deck_name], 'highscore': [highscore], '_recent': [recent_score]})
+EmptyScores: pd.DataFrame = pd.DataFrame(
+    columns=["fpath", "deck_name", "highscore", "_recent"]
+)
+
+
+def add_score_row(
+    scores: pd.DataFrame,
+    fpath: str,
+    deck_name: str,
+    highscore: float,
+    recent_score: float,
+) -> pd.DataFrame:
+    new_row = pd.DataFrame(
+        {
+            "fpath": [fpath],
+            "deck_name": [deck_name],
+            "highscore": [highscore],
+            "_recent": [recent_score],
+        }
+    )
     return pd.concat((scores, new_row))

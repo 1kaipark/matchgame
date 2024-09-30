@@ -31,9 +31,9 @@ class Palette(object):
 
 
 CardPalette = Palette(
-    bg=(3, 155, 229),
-    fg=(245, 245, 245),
-    sel=(27, 94, 32),
+    bg=(245, 245, 245),
+    fg=(33, 33, 33),
+    sel=(0, 200, 83),
     flag=(198, 40, 40),
 )
 

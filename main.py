@@ -5,18 +5,24 @@ import os
 from tkinter.filedialog import askopenfilenames
 from tkinter import ttk
 import pandas as pd
-from lib.utils import EmptyScores
+from lib.utils import EmptyScores, MAX32
+from lib.game_meta import GameMeta
 from lib.q2csv import CSVGenerator
 
 from matchgame import run_game
 
 class Launcher(object):
-    def __init__(self, root: tk.Tk) -> None:
+    def __init__(self, root: tk.Tk, config_path: str | None = None) -> None:
         """Initialize"""
         self.root = root
 
         self.deck_csvs: list[str] = None
         self.scores_df: pd.DataFrame = EmptyScores
+        
+        if config_path:
+            self.meta = GameMeta.from_json(config_path)
+        else:
+            self.meta = GameMeta()
 
         self.create_widgets()
 
@@ -56,9 +62,7 @@ class Launcher(object):
             csv_path = csv
             deck_name = Path(csv_path).stem.strip()
 
-            highscore = int.from_bytes(
-                bytes.fromhex("7FFFFFFF")
-            ) 
+            highscore = MAX32
             recent_score = highscore
 
             if os.path.exists('scores.csv'):
@@ -89,7 +93,7 @@ class Launcher(object):
         fpath = str(*selected)
         print(fpath)
         if fpath:
-            result = run_game(fpath)
+            result = run_game(fpath, self.meta)
             # Update tree with new highscore from CSV
             if result:
                 scores_updated = pd.read_csv('scores.csv')
@@ -103,5 +107,5 @@ class Launcher(object):
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = Launcher(root)
+    app = Launcher(root, "defaults.json")
     root.mainloop()

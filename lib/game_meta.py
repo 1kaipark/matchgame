@@ -5,6 +5,7 @@ PENALTY = 5.0
 
 from dataclasses import dataclass
 import json
+from typing import Literal
 
 
 @dataclass
@@ -13,6 +14,7 @@ class GameMeta:
     card_font_size: int = 20
     menu_font_size: int = 36
     penalty: float = 5.0
+    positioning: Literal["grid", "random"] = "grid"
 
     @classmethod
     def from_json(cls, json_path: str):
@@ -23,4 +25,5 @@ class GameMeta:
             card_font_size=cfg["card_font_size"],
             menu_font_size=cfg["menu_font_size"],
             penalty=cfg["penalty"],
+            positioning=cfg["positioning"],
         )
