@@ -42,11 +42,13 @@ def showGame(
     menu_font: "pygame.font.Font",
     card_font: "pygame.font.Font",
     palette: "Palette" = MainPalette,
+    width: int = WIDTH,
+    height: int = HEIGHT,
     positioning: Literal["grid", "random"] = "grid",
 ) -> tuple[float, float]:
     cards_dict, deck_name = load_cards(deck_path)
     cards = create_cards(
-        cards_dict, positioning=positioning, screen_dim=(WIDTH, HEIGHT), font=card_font
+        cards_dict, positioning=positioning, screen_dim=(width, height), font=card_font
     )
 
     # Handling score loading:
@@ -154,23 +156,28 @@ def showGame(
                                 mx, my = event.pos
                                 offset_x = card.rect.x - mx
                                 offset_y = card.rect.y - my
-                        
+
                     elif event.type == pygame.MOUSEMOTION:
                         if drag_card:
                             mx, my = event.pos
                             drag_card.rect.x = mx + offset_x
                             drag_card.rect.y = my + offset_y
-                            
+
                     elif event.type == pygame.MOUSEBUTTONUP:
                         if drag_card:
                             collidedwith: list["Card"] = []
                             for card in cards:
                                 if card.match_id != drag_card.match_id:
-                                    if drag_card.check_collision(card.rect): # if any(card.check_click(coord) for coord in drag_card.corner_pos):
+                                    if drag_card.check_collision(
+                                        card.rect
+                                    ):  # if any(card.check_click(coord) for coord in drag_card.corner_pos):
                                         collidedwith.append(card)
-                            
+
                             if len(collidedwith) > 0:
-                                if not any(card.match_id + drag_card.match_id == 1000 for card in collidedwith):
+                                if not any(
+                                    card.match_id + drag_card.match_id == 1000
+                                    for card in collidedwith
+                                ):
                                     print("NOPE")
                                     drag_card.rect.x = og_coords[0]
                                     drag_card.rect.y = og_coords[1]
@@ -193,7 +200,7 @@ def showGame(
                                             drag_card.set_matched()
                                             cards.remove(card)
                                             cards.remove(drag_card)
-                                            
+
                                         # if card.match_id + drag_card.match_id == 1000:
                                         #     drag_card.rect.x = og_coords[0]
                                         #     drag_card.rect.y = og_coords[1]
@@ -208,7 +215,7 @@ def showGame(
                                         #     # Mismatch handling: teleport the card to OG coordinates
                                         #     drag_card.rect.x = og_coords[0]
                                         #     drag_card.rect.y = og_coords[1]
-                                            
+
                                         #     # handling penalty and feedback
                                         #     penalty_time += PENALTY
                                         #     x_sign = pygame.font.Font(None, 200).render(
@@ -221,12 +228,10 @@ def showGame(
                                         #     screen.blit(x_sign, x_rect)
                                         #     pygame.display.flip()
                                         #     pygame.time.delay(200)
-                        
 
                         for card in cards:
                             card.deselect()
                         drag_card = None
-                        
 
         pygame.display.flip()
         if all(card.matched for card in cards):
@@ -247,9 +252,7 @@ def showGame(
             return (elapsed_time, highscore)
 
 
-def run_game(
-    csv_path: str, metadata: "GameMeta" = GameMeta()
-) -> tuple[float, float]:
+def run_game(csv_path: str, metadata: "GameMeta" = GameMeta()) -> tuple[float, float]:
     """Runs the main game loop from a given CSV path. Returns tuple (recent_score, high_score)"""
     pygame.init()
     pygame.font.init()
@@ -264,6 +267,8 @@ def run_game(
         pygame.font.SysFont("Roboto", metadata.menu_font_size),
         font,
         positioning=metadata.positioning,
+        width=metadata.screen_dim[0],
+        height=metadata.screen_dim[1],
     )
     print("Hi")
 
@@ -272,4 +277,6 @@ def run_game(
 
 
 if __name__ == "__main__":
-    run_game('newquizletsplitterGUI/test', 'random')
+    run_game(
+        "newquizletsplitterGUI/korean.csv", GameMeta((1280, 720), 20, 36, 6, "random")
+    )
