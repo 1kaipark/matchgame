@@ -10,6 +10,8 @@ MAX32: int = int.from_bytes(
         bytes.fromhex("7FFFFFFF")
     )  # doesn't matter this is just swag lmao
 
+
+
 """Hopefully this is useful
 https://www.pygame.org/wiki/TextWrap
 """
@@ -32,12 +34,12 @@ def drawText(surface, text, color, rect, font, aa=False, bkg=None):
             break
 
         # determine maximum width of line
-        while font.size(text[:i])[0] < rect.width and i < len(text):
-            i += 1
+        while font.size(text[:i])[0] < rect.width - (font.size('AA')[0]) and i < len(text):
+            i += 1 # this stops counting i when the text is too big to fit on one line
 
         # if we've wrapped the text, then adjust the wrap to the last word
         if i < len(text):
-            i = text.rfind(" ", 0, i) + 1
+            i = text.rfind("", 0, i) + 1
 
         # render the line and blit it to the surface
         if bkg:
@@ -136,29 +138,14 @@ yield (idk this logic lmao) (x, y), then (x + x_incr, y + y_incr) ....
 i should also make it modular, like def create_deck_from_cards(dataframe)
 
 """
-
-
-def GridGenerator(
-    x_incr: int, y_incr: int, x_max: int, y_max: int
-) -> Iterator[tuple[int, int]]:
-    x, y = 0, 0
-    while y <= y_max or 1:
-        yield (x, y)
-        x += x_incr
-
-        # Wrap around the x value if it exceeds x_max
-        if x >= x_max - 150:
-            x = 0
-            y += y_incr
-
-
+max_attempts = 100000
 def GridGenerator(
     x_incr: int,
     y_incr: int,
     x_max: int,
     y_max: int,
     positioning: Literal["grid", "random"] = "grid",
-    padding: int = 50,
+    padding: int = 20,
 ) -> Iterator[tuple[int, int]]:
 
     if positioning == "grid":
@@ -172,23 +159,33 @@ def GridGenerator(
                 x = 0
                 y += y_incr
     elif positioning == "random":
-        occupied_pos: list[tuple[int, int]] = []
-        while len(occupied_pos) < (x_max // x_incr) * (y_max // y_incr):
-            x = random.randint(0, x_max - x_incr)
-            y = random.randint(0, y_max - y_incr)
-            candidate = (x, y)
-
-            if not any(
-                (
+        while True:
+            occupied_pos: list[tuple[int, int]] = []
+            attempts: int = 0
+            while len(occupied_pos) < (x_max // x_incr) * (y_max // y_incr):
+                if attempts >= max_attempts:
+                    print("Uhhhh")
+                    break
+                x = random.randint(0, x_max - x_incr)
+                y = random.randint(0, y_max - y_incr)
+                candidate = (x, y)
+                if not any(
                     (
-                        abs(x - ox) < x_incr + padding
-                        and abs(y - oy) < y_incr + padding
-                        for ox, oy in occupied_pos
+                        (
+                            abs(x - ox) < x_incr + padding
+                            and abs(y - oy) < y_incr + padding
+                            for ox, oy in occupied_pos
+                        )
                     )
-                )
-            ):
-                occupied_pos.append(candidate)
-                yield candidate
+                ):
+                    occupied_pos.append(candidate)
+                    yield candidate
+                    attempts = 0
+                else:
+                    attempts += 1
+            else:
+                break
+
 
 
 def create_cards(
@@ -212,7 +209,7 @@ def create_cards(
         card_width = (screen_dim[0] - 150) // 5
         card_height = screen_dim[1] // 4
     elif positioning == "random":
-        card_width = (screen_dim[0] - 150) // 10
+        card_width = (screen_dim[0] - 150) // 9
         card_height = screen_dim[1] // 8
 
     positions: list = (

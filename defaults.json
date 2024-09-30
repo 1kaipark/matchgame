@@ -1,8 +1,1 @@
-{
-    "width": 1280,
-    "height": 720,
-    "card_font_size": 20,
-    "menu_font_size": 36,
-    "penalty": 5.0,
-    "positioning": "random"
-}
+{"width": 1600, "height": 900, "card_font_size": 18, "menu_font_size": 36, "penalty": 5, "positioning": "random"}

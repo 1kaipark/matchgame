@@ -39,16 +39,17 @@ def load_cards(csv_path: str) -> dict:
 def showGame(
     screen: "pygame.Surface",
     deck_path: str,
-    menu_font: "pygame.font.Font",
-    card_font: "pygame.font.Font",
     palette: "Palette" = MainPalette,
-    width: int = WIDTH,
-    height: int = HEIGHT,
-    positioning: Literal["grid", "random"] = "grid",
+    metadata: "GameMeta" = meta,
 ) -> tuple[float, float]:
     cards_dict, deck_name = load_cards(deck_path)
+
+    card_font = pygame.font.Font('NotoSansKR-VariableFont_wght.ttf', metadata.card_font_size)
+    menu_font = pygame.font.SysFont('Arial', metadata.menu_font_size)
+    positioning = metadata.positioning
+    
     cards = create_cards(
-        cards_dict, positioning=positioning, screen_dim=(width, height), font=card_font
+        cards_dict, positioning=positioning, screen_dim=metadata.screen_dim, font=card_font
     )
 
     # Handling score loading:
@@ -94,7 +95,7 @@ def showGame(
             elapsed_time: float = round(igtime + penalty_time, 2)
 
         stopwatch_text = menu_font.render(f"{elapsed_time} s", True, palette.fg)
-        screen.blit(stopwatch_text, (WIDTH - 100, 20))
+        screen.blit(stopwatch_text, (metadata.screen_dim[0] - 100, 20))
 
         # display the cards
         # def render_frame(screen, cards)
@@ -125,12 +126,12 @@ def showGame(
                                         for card in selected:
                                             card.deselect()
                                     else:
-                                        penalty_time += PENALTY
+                                        penalty_time += metadata.penalty
                                         x_sign = pygame.font.Font(None, 200).render(
                                             "X", True, palette.flag
                                         )
                                         x_rect = x_sign.get_rect(
-                                            center=(WIDTH // 2, HEIGHT // 2)
+                                            center=(metadata.screen_dim[0] // 2, metadata.screen_dim[1] // 2)
                                         )
 
                                         screen.blit(x_sign, x_rect)
@@ -182,12 +183,12 @@ def showGame(
                                     drag_card.rect.x = og_coords[0]
                                     drag_card.rect.y = og_coords[1]
                                     # handling penalty and feedback
-                                    penalty_time += PENALTY
+                                    penalty_time += metadata.penalty
                                     x_sign = pygame.font.Font(None, 200).render(
                                         "X", True, palette.flag
                                     )
                                     x_rect = x_sign.get_rect(
-                                        center=(WIDTH // 2, HEIGHT // 2)
+                                        center=(metadata.screen_dim[0] // 2, metadata.screen_dim[1] // 2)
                                     )
 
                                     screen.blit(x_sign, x_rect)
@@ -238,12 +239,18 @@ def showGame(
             screen.fill(palette.bg)
             time_started = False
             ggW = menu_font.render(f"GGWP: time {elapsed_time} s", True, palette.fg)
-            screen.blit(ggW, (WIDTH // 2, HEIGHT // 2))
+
+            new_hs: bool = (elapsed_time < highscore)
+            if new_hs:
+                hs_congrats = menu_font.render(f"You just set a new highscore by {round(highscore - elapsed_time, 2)} s good shit brother", True, palette.fg)
+                screen.blit(hs_congrats, (metadata.screen_dim[0] // 2, metadata.screen_dim[1] // 2 - 50))
+
+            screen.blit(ggW, (metadata.screen_dim[0] // 2, metadata.screen_dim[1] // 2))
             pygame.display.flip()
             pygame.time.delay(1000)
             scores.loc[scores["deck_name"] == deck_name, "_recent"] = elapsed_time
             print(elapsed_time, highscore)
-            if elapsed_time < highscore:
+            if new_hs:
                 print("New High Score")
                 highscore = elapsed_time
                 scores.loc[scores["deck_name"] == deck_name, "highscore"] = highscore
@@ -264,19 +271,15 @@ def run_game(csv_path: str, metadata: "GameMeta" = GameMeta()) -> tuple[float, f
     score = showGame(
         screen,
         csv_path,
-        pygame.font.SysFont("Roboto", metadata.menu_font_size),
-        font,
-        positioning=metadata.positioning,
-        width=metadata.screen_dim[0],
-        height=metadata.screen_dim[1],
+        metadata=metadata
     )
     print("Hi")
-
+    pygame.time.delay(800)
     pygame.quit()
     return score
 
 
 if __name__ == "__main__":
     run_game(
-        "newquizletsplitterGUI/korean.csv", GameMeta((1280, 720), 20, 36, 6, "random")
+        "l10c2.csv", GameMeta((1280, 720), 20, 36, 6, "random")
     )

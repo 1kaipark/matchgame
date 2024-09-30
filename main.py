@@ -8,6 +8,7 @@ import pandas as pd
 from lib.utils import EmptyScores, MAX32
 from lib.game_meta import GameMeta
 from lib.q2csv import CSVGenerator
+from lib.settings_panel import SettingsPanel
 
 from matchgame import run_game
 
@@ -23,6 +24,8 @@ class Launcher(object):
             self.meta = GameMeta.from_json(config_path)
         else:
             self.meta = GameMeta()
+
+        self.config_path = config_path
 
         self.create_widgets()
 
@@ -42,16 +45,34 @@ class Launcher(object):
         self.open_files_button.grid(row=1, column=0)
 
         self.root.resizable(False, False)
-        
+
+        if os.path.exists('scores.csv'):
+            scores = pd.read_csv('scores.csv')
+            for score_row in scores.iterrows():
+                print(score_row[1]['fpath'])
+                try:
+                    self.tree.insert(
+                        "",
+                        tk.END,
+                        iid=score_row[1]['fpath'],
+                        values=(score_row[1]['deck_name'], score_row[1]['highscore'], score_row[1]['_recent'])
+                    )
+                except Exception as e:
+                    print(e)
         
         # NOTE DELETE ME SOON
         def donothing(): 1==1
         self.menubar = tk.Menu(root)
         self.filemenu = tk.Menu(self.menubar, tearoff=0)
-        self.filemenu.add_command(label="Clear all CSVs", command=self.clear_decks)
+
         self.filemenu.add_command(label="Create CSV from Quizlet", command=self.open_q2csv)
+
         self.filemenu.add_separator()
+        self.filemenu.add_command(label="Settings", command=self.open_settings)
+        self.filemenu.add_separator()
+
         self.filemenu.add_command(label="Exit", command=root.quit)
+        self.filemenu.add_command(label="Clear all CSVs", command=self.clear_decks)
         self.menubar.add_cascade(label="File", menu=self.filemenu)
         
         self.root.config(menu=self.menubar)
@@ -103,6 +124,12 @@ class Launcher(object):
                 
     def open_q2csv(self) -> None:
         app = CSVGenerator(root=self.root)
+
+    def open_settings(self) -> None:
+        app = SettingsPanel(root=self.root, cfgfile=self.config_path, refresh_command=self.refresh_metadata)
+
+    def refresh_metadata(self) -> None:
+        self.meta = GameMeta.from_json(self.config_path)
 
 
 if __name__ == "__main__":
