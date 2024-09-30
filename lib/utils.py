@@ -7,14 +7,15 @@ from typing import Literal, Iterator
 from .colors import Palette, CardPalette, MainPalette
 
 MAX32: int = int.from_bytes(
-        bytes.fromhex("7FFFFFFF")
-    )  # doesn't matter this is just swag lmao
-
+    bytes.fromhex("7FFFFFFF")
+)  # doesn't matter this is just swag lmao
 
 
 """Hopefully this is useful
 https://www.pygame.org/wiki/TextWrap
 """
+
+
 # draw some text into an area of a surface
 # automatically wraps words
 # returns any text that didn't get blitted
@@ -34,8 +35,10 @@ def drawText(surface, text, color, rect, font, aa=False, bkg=None):
             break
 
         # determine maximum width of line
-        while font.size(text[:i])[0] < rect.width - (font.size('AA')[0]) and i < len(text):
-            i += 1 # this stops counting i when the text is too big to fit on one line
+        while font.size(text[:i])[0] < rect.width - (font.size("AA")[0]) and i < len(
+            text
+        ):
+            i += 1  # this stops counting i when the text is too big to fit on one line
 
         # if we've wrapped the text, then adjust the wrap to the last word
         if i < len(text):
@@ -55,6 +58,21 @@ def drawText(surface, text, color, rect, font, aa=False, bkg=None):
         text = text[i:]
 
     return text
+
+
+# for calculating the size of each card in 'random' mode:
+def text_size(text, rect, font, padding) -> tuple[int, int]:
+    """Returns tuple (width, height) of the text"""
+    rect = pygame.Rect(rect)
+    y = rect.top
+    lineSpacing = -2
+
+    # get the height of the font
+    fontHeight = font.size("Tg")[1]
+
+    image = font.render(text, True, (0, 0, 0))
+
+    return (image.get_width() + padding, image.get_height() + padding)
 
 
 class Card(object):
@@ -86,7 +104,6 @@ class Card(object):
         self.matched = False  # is the card matched? will not display
         self.selected = False
 
-        
         self.width = width
         self.height = height
 
@@ -102,16 +119,15 @@ class Card(object):
     def draw(self, screen) -> None:
         """Draws rectangle on screen"""
         pygame.draw.rect(screen, self._color, self.rect)
-        drawText(screen, self.text, self.palette.fg, self.rect, self.font)
+        drawText(screen, self.text, self.palette.fg, self.rect, self.font, bkg=False)
 
     def check_click(self, pos) -> bool:
         """Returns if the point is inside the rectangle"""
         return self.rect.collidepoint(pos)
-    
+
     def check_collision(self, rect: "pygame.Rect") -> bool:
         """Returns true if rectangle collides"""
         return self.rect.colliderect(rect) if not self.matched else False
-        
 
     def set_matched(self) -> None:
         """Mark card as matched"""
@@ -139,6 +155,8 @@ i should also make it modular, like def create_deck_from_cards(dataframe)
 
 """
 max_attempts = 100000
+
+
 def GridGenerator(
     x_incr: int,
     y_incr: int,
@@ -187,7 +205,6 @@ def GridGenerator(
                 break
 
 
-
 def create_cards(
     cards_dict: dict,
     positioning: Literal["grid", "random"] = "grid",
@@ -204,7 +221,7 @@ def create_cards(
     print(cards_dict)
     items: list[tuple] = list(cards_dict.items())
     random.shuffle(items)
-    
+
     if positioning == "grid":
         card_width = (screen_dim[0] - 150) // 4
         card_height = screen_dim[1] // 3
@@ -227,7 +244,7 @@ def create_cards(
     for i in range(len(items) * 2):
         coord = next(generator)
         positions.append(coord)
-        
+
     random.shuffle(positions)
     positions = list(zip(positions[::2], positions[1:][::2]))
 
@@ -239,14 +256,25 @@ def create_cards(
         id2 = 1000 - id1
 
         pos1, pos2 = positions[i][0], positions[i][1]
+        pad, _ = text_size("A", (0, 0, 100, 100), font, 0)
+        term_width, term_height = (
+            text_size(key, (0, 0, card_width, card_height), font, pad*2)
+            if positioning == "random"
+            else (card_width, card_height)
+        )
+        def_width, def_height = (
+            text_size(value, (0, 0, card_width, card_height), font, pad*2)
+            if positioning == "random"
+            else (card_width, card_height)
+        )
 
         term_card = Card(
             text=key,
             match_id=id1,
             x=pos1[0],
             y=pos1[1],
-            width=card_width,
-            height=card_height,
+            width=term_width,
+            height=term_height,
             font=font,
         )  # watch the dims
         def_card = Card(
@@ -254,8 +282,8 @@ def create_cards(
             match_id=id2,
             x=pos2[0],
             y=pos2[1],
-            width=card_width,
-            height=card_height,
+            width=def_width,
+            height=def_height,
             font=font,
         )
         cards.extend([term_card, def_card])  # extend? do we want a list of lists?
