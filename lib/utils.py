@@ -41,8 +41,14 @@ def drawText(surface, text, color, rect, font, aa=False, bkg=None):
             i += 1  # this stops counting i when the text is too big to fit on one line
 
         # if we've wrapped the text, then adjust the wrap to the last word
-        if i < len(text):
-            i = text.rfind("", 0, i) + 1
+        if (
+            i < len(text) and font.size(text.split(" ")[0])[0] < rect.width
+        ):  # second conditional, to prevent long ass single words
+            i = max(
+                (text.rfind(" ", 0, i) + 1),
+                (text.rfind("-", 0, i) + 1),
+                (text.rfind("/", 0, i) + 1),
+            )
 
         # render the line and blit it to the surface
         if bkg:
@@ -60,19 +66,44 @@ def drawText(surface, text, color, rect, font, aa=False, bkg=None):
     return text
 
 
-# for calculating the size of each card in 'random' mode:
-def text_size(text, rect, font, padding) -> tuple[int, int]:
-    """Returns tuple (width, height) of the text"""
-    rect = pygame.Rect(rect)
+def text_size(text, rect, font, padding):
+    rect = pygame.Rect(*rect)
     y = rect.top
     lineSpacing = -2
 
     # get the height of the font
     fontHeight = font.size("Tg")[1]
 
-    image = font.render(text, True, (0, 0, 0))
+    # define here for safety
+    image = None
 
-    return (image.get_width() + padding, image.get_height() + padding)
+    total_width, total_height = 0, 0
+
+    while text:
+        i = 1
+
+        # # determine if the row of text will be outside our area
+        # if y + fontHeight > rect.bottom:
+        #     break
+
+        # determine maximum width of line. max width * 2, since a little overflow is fine (shouldn't use super long things for match anyway)
+        while font.size(text[:i])[0] < rect.width * 2 and i < len(text):
+            i += 1  # this stops counting i when the text is too big to fit on one line
+
+        # if we've wrapped the text, then adjust the wrap to the last word
+        if i < len(text):
+            i = text.rfind(" ", 0, i) + 1
+
+        # render the line and blit it to the surface
+        image = font.render(text[:i], True, (0, 0, 0))
+
+        total_width = max(total_width, image.get_width())
+        y += fontHeight + lineSpacing
+
+        # remove the text we just blitted
+        text = text[i:]
+
+    return (total_width + padding * 2, y + padding * 2)
 
 
 class Card(object):
@@ -258,12 +289,12 @@ def create_cards(
         pos1, pos2 = positions[i][0], positions[i][1]
         pad, _ = text_size("A", (0, 0, 100, 100), font, 0)
         term_width, term_height = (
-            text_size(key, (0, 0, card_width, card_height), font, pad*2)
+            text_size(key, (0, 0, card_width, card_height), font, pad * 2)
             if positioning == "random"
             else (card_width, card_height)
         )
         def_width, def_height = (
-            text_size(value, (0, 0, card_width, card_height), font, pad*2)
+            text_size(value, (0, 0, card_width, card_height), font, pad * 2)
             if positioning == "random"
             else (card_width, card_height)
         )
