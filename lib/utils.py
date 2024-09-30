@@ -6,16 +6,13 @@ from typing import Literal, Iterator
 
 from .colors import Palette, CardPalette, MainPalette
 
-
-"""Hopefully this is useful
-https://www.pygame.org/wiki/TextWrap
-"""
-
 MAX32: int = int.from_bytes(
         bytes.fromhex("7FFFFFFF")
     )  # doesn't matter this is just swag lmao
 
-
+"""Hopefully this is useful
+https://www.pygame.org/wiki/TextWrap
+"""
 # draw some text into an area of a surface
 # automatically wraps words
 # returns any text that didn't get blitted
