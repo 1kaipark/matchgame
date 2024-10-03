@@ -29,7 +29,7 @@ def load_cards(csv_path: str) -> dict:
 
     deck_name = Path(csv_path).stem
 
-    cards_df = pd.read_csv(csv_path)
+    cards_df = pd.read_csv(csv_path).dropna()
     cards_df = cards_df.sample(frac=1.0)
     cards_df = cards_df.iloc[0:6]
 

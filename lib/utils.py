@@ -89,7 +89,6 @@ def text_size(text, rect, font, padding):
         # determine maximum width of line. max width * 2, since a little overflow is fine (shouldn't use super long things for match anyway)
         while font.size(text[:i])[0] < rect.width * 2 and i < len(text):
             i += 1  # this stops counting i when the text is too big to fit on one line
-
         # if we've wrapped the text, then adjust the wrap to the last word
         if i < len(text):
             i = text.rfind(" ", 0, i) + 1
