@@ -4,3 +4,7 @@ newquizletsplitterGUI
 
 *.ipynb
 *.csv
+
+.DS_Store
+
+
