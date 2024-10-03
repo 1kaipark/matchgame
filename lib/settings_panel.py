@@ -1,4 +1,10 @@
-import tkinter as tk
+from PySide6.QtWidgets import (
+    QApplication, QWidget, QGridLayout, QPushButton, QLineEdit, QLabel, QMessageBox
+)
+from PySide6.QtCore import QSize, Qt
+from typing import Callable
+import sys
+
 import os
 import json
 
@@ -25,43 +31,61 @@ def ProllyFloat(val: Any) -> float | Any:
         print(e)
         return val
 
-class SettingsPanel(tk.Toplevel):
-    def __init__(self, root: tk.Tk, cfgfile: str = '', refresh_command: Callable = hi) -> None:
-        super().__init__(root)
+class SettingsPanel(QWidget):
+    def __init__(self, cfgfile: str, refresh_command: Callable) -> None:
+
+        super().__init__()
 
         self.cfgfile = cfgfile
         if self.cfgfile:
             with open(self.cfgfile, 'rb') as h:
-                self.cfg = json.load(h)
+                self.cfg =json.load(h)
+
         else:
             self.cfg = DEFAULTS
-        
+
         self.refresh_command = refresh_command
+        self.init_ui()
 
-        self.create_widgets()
-
-
-    def create_widgets(self) -> None:
+    def init_ui(self) -> None:
+        lt = QGridLayout()
         self.labels_entries: dict = {}
+
         for i, key in enumerate(self.cfg.keys()):
-            label = tk.Label(master=self, text=key)
-            entry = tk.Entry(master=self)
+            label = QLabel(key)
+            entry = QLineEdit()
 
-            entry.insert(0, self.cfg[key])
+            entry.setText(str(self.cfg[key]))
 
-            label.grid(row=i, column=0, sticky="w", padx=5, pady=5)
-            entry.grid(row=i, column=1, padx=5, pady=5)
+            lt.addWidget(label, i, 0)
+            lt.addWidget(entry, i, 1)
 
             self.labels_entries[label] = entry
 
-        save_button = tk.Button(master=self, text='Save Config', command=self.save_config)
-        save_button.grid(row=i+1, column=1, padx=5, pady=5)
+        self.save_button = QPushButton("save config")
+        self.save_button.clicked.connect(self.save_config)
+        lt.addWidget(self.save_button, i+1, 1)
+
+        self.setLayout(lt)
+
 
     def save_config(self) -> None:
-        new_config: dict = {label.cget('text') : ProllyFloat(entry.get()) for label, entry in self.labels_entries.items()}
-
+        new_config: dict = {
+            label.text(): ProllyFloat(entry.text()) for label, entry in self.labels_entries.items()
+        }
+        print(new_config)
         with open(self.cfgfile, 'w') as h:
             json.dump(new_config, h)
 
         self.refresh_command()
-        
+        saved = QMessageBox(self)
+        saved.setText("saved config to {}".format(self.cfgfile))
+        button = saved.exec()
+        if button == QMessageBox.StandardButton.Ok:
+            self.close()
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    sp = SettingsPanel(None, lambda x: 1==1)
+    sp.show()
+    sys.exit(app.exec())

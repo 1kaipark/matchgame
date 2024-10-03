@@ -1,7 +1,8 @@
+import sys
 import pandas as pd
-import tkinter as tk
-from tkinter.scrolledtext import ScrolledText
-from tkinter.filedialog import asksaveasfilename as ppppp
+
+from PySide6.QtWidgets import (QApplication, QWidget, QGridLayout, QLineEdit, QPushButton, QPlainTextEdit, QLabel, QMessageBox, QFileDialog)
+from PySide6.QtCore import QSize, Qt
 
 ROW_SPLIT: str = '||||'
 CARD_SPLIT: str = '~~~~'
@@ -31,48 +32,58 @@ def parse_quizlet_str(
         {"term": list(split_cards.keys()), "definition": list(split_cards.values())}
     )
 
+class CSVGenerator(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
 
-class CSVGenerator(tk.Toplevel):
-    def __init__(self, root: tk.Tk) -> None:
-        super().__init__(root)
-        self.root = root
-        self.create_widgets()
-        
-    def create_widgets(self) -> None:
-        
+        self.init_ui()
+
+    def init_ui(self) -> None:
+        lt = QGridLayout()
+
         labels_texts = ["Enter raw quizlet data:", "Front/Back Splitter String:", "Row Splitter String:"]
         for i, text in enumerate(labels_texts):
-            label = tk.Label(self, text=text)
-            label.grid(row=i, column=0, sticky="w", padx=5, pady=5)
-        self.content_entry = ScrolledText(master=self, height=10, width=30)
-        # self.content_entry.insert('1.0', testcontent)
-        self.content_entry.grid(row=0, column=1, padx=5, pady=5)
+            label = QLabel(text)
+            lt.addWidget(label, i, 0)
         
+        # raw quizlet data: row 0
+        # front back splitter: row 1
+        # term def splitter: row 2
 
-        
-        self.card_split = tk.Entry(self)
-        self.card_split.insert(0, CARD_SPLIT)
-        self.card_split.grid(row=1, column=1, padx=5, pady=5)
-        
-        self.row_split = tk.Entry(self)
-        self.row_split.insert(0, ROW_SPLIT)
-        self.row_split.grid(row=2, column=1, padx=5, pady=5)
-        
-        self.process_button = tk.Button(self, text="Process Flashcards", command=self.process_flashcards)
-        self.process_button.grid(row=3, columnspan=2, pady=10)
-        
-    def process_flashcards(self) -> None:
-        content = self.content_entry.get('1.0', tk.END)
-        print(content)
-        card_split = self.card_split.get()
-        row_split = self.row_split.get()
+        self.content = QPlainTextEdit()
+
+        self.card_split = QLineEdit()
+        self.card_split.setText(CARD_SPLIT)
+
+        self.row_split = QLineEdit()
+        self.row_split.setText(ROW_SPLIT)
+
+        self.process_button = QPushButton("Process Flashcards")
+        self.process_button.clicked.connect(self.process_fcs)
+
+        lt.addWidget(self.content, 0, 1)
+        lt.addWidget(self.card_split, 1, 1)
+        lt.addWidget(self.row_split, 2, 1)
+        lt.addWidget(self.process_button, 3, 1)
+
+        self.setLayout(lt)
+
+    def process_fcs(self) -> None:
+        content = self.content.toPlainText()
+        card_split = self.card_split.text()
+        row_split = self.row_split.text()
+
         df = parse_quizlet_str(content, row_split, card_split)
-        df.to_csv(ppppp(defaultextension='.csv'), index=False)
-        
-        
-        
+        outfile, _ = QFileDialog.getSaveFileName(self, "save CSV", "", "hi bro (*.csv)")
+        df.to_csv(outfile, index=False)
+
+        noti = QMessageBox()
+        noti.setWindowTitle("saved")
+        noti.setText(f"saved to {outfile}")
+        noti.exec_()
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = CSVGenerator(root)
-    root.mainloop()
+    app = QApplication(sys.argv)
+    sp = CSVGenerator()
+    sp.show()
+    sys.exit(app.exec())
